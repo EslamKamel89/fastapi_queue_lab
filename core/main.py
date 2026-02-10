@@ -19,7 +19,7 @@ def create_app() -> FastAPI:
     app_name = settings.APP_NAME
     database_url = settings.DATABASE_URL
     if not app_name or not database_url:
-        raise RuntimeError("Env variables is not loaded")
+        raise RuntimeError("[FastAPI] Env variables is not loaded")
     database = Database(database_url=database_url, echo=True)
 
     @asynccontextmanager
