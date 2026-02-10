@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from apps.jobs.repository import claim_next_job
+from apps.jobs.repository import claim_next_job, mark_job_completed, mark_job_failed
 
 load_dotenv()
 
@@ -13,13 +13,9 @@ from core.database import Database
 
 
 async def execute_job(job: Job) -> None:
-    try:
-        print(f"Execution job: {job.id}")
-        await asyncio.sleep(2)
-        print(f"Finished job: {job.id}")
-    except asyncio.CancelledError as e:
-        print(f"Job {job.id} execution was cancelled")
-        raise e
+    print(f"Execution job: {job.id}")
+    await asyncio.sleep(2)
+    print(f"Finished job: {job.id}")
 
 
 async def main():
@@ -37,9 +33,14 @@ async def main():
                     await asyncio.sleep(1)
                     continue
                 print(f"Claiming job {job.id}")
-                await execute_job(job)
-    except asyncio.CancelledError:
-        print(f"The worker execution was cancelled")
+                try:
+                    await execute_job(job)
+                    async with database.SessionLocal() as session:
+                        await mark_job_completed(session, job.id)
+                except Exception as exc:
+                    async with database.SessionLocal() as session:
+                        await mark_job_failed(session, job.id, str(exc))
+                    print(f"Job {job.id} failed: {exc}")
     finally:
         print("Performing Essential clean up")
         await database.dispose()
