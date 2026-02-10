@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
         print("startup: performing lightweight app checks")
         async with database.engine.begin() as conn:
             from apps.auth.models import User
+            from apps.jobs.models import Job
 
             await conn.run_sync(Base.metadata.create_all)
         yield
